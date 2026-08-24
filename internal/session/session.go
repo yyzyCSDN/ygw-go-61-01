@@ -116,7 +116,9 @@ func (s *Store) Renew(ctx context.Context, id string) error {
 		return fmt.Errorf("persist after renew %s: %w", id, err)
 	}
 	if s.mirror != nil {
-		_ = s.mirror.Mirror(ctx, sess)
+		if err := s.mirror.Mirror(ctx, sess); err != nil {
+			return fmt.Errorf("mirror after renew %s: %w", id, err)
+		}
 	}
 	return nil
 }

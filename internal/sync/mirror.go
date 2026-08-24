@@ -2,11 +2,18 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
 	"sessionstore/internal/model"
 )
+
+// ErrMirrorWrite is the sentinel wrapped into every error produced by a failed
+// mirror write.  It lets upper layers distinguish a mirror failure from a
+// not-found or lifecycle error with errors.Is so the failure is reported
+// honestly instead of being mistaken for a benign miss.
+var ErrMirrorWrite = errors.New("mirror write failed")
 
 // MirrorBackend is the durable sink that receives session snapshots.
 type MirrorBackend interface {
@@ -62,6 +69,13 @@ func (m *MemoryMirror) Count() int {
 }
 
 // MirrorError wraps a failed mirror write with the session id for observability.
+// The sentinel ErrMirrorWrite is always wrapped so callers can detect mirror
+// failures with errors.Is even after the id and cause are layered on top.
 func MirrorError(id string, err error) error {
-	return fmt.Errorf("mirror write %s: %w", id, err)
+	return fmt.Errorf("mirror write %s: %w: %w", id, err, ErrMirrorWrite)
+}
+
+// IsMirrorError reports whether err originated from a failed mirror write.
+func IsMirrorError(err error) bool {
+	return errors.Is(err, ErrMirrorWrite)
 }
