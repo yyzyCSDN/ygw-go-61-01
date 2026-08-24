@@ -1,0 +1,9 @@
+.git
+.verification-cache
+evidence
+private_oracles
+workspaces
+cases
+runner
+*.jsonl
+*.log
