@@ -4,11 +4,19 @@ import "time"
 
 // Refresh moves the expiry window of an existing session forward by the
 // supplied TTL.  Renewals that happen while a session is still active must
-// keep the session alive for another full window.
+// keep the session alive for another full window, so the entry's expiry and
+// TTL are recomputed from the current time exactly as Register would for a
+// fresh session.
 func (c *Clock) Refresh(id string, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if _, ok := c.entries[id]; !ok {
+	entry, ok := c.entries[id]
+	if !ok {
 		return
 	}
+	if ttl <= 0 {
+		ttl = c.defaultTTL
+	}
+	entry.ExpireAt = c.now().Add(ttl)
+	entry.TTL = ttl
 }

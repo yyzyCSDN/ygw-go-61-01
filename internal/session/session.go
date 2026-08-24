@@ -109,6 +109,7 @@ func (s *Store) Renew(ctx context.Context, id string) error {
 	}
 	sess.Touch(s.now())
 	sess.State = model.StateActive
+	sess.ExpireAt = s.now().Add(sess.TTL)
 	sess.Version = s.versions.Next()
 	s.clock.Refresh(id, sess.TTL)
 	if err := s.backend.Write(ctx, id, sess); err != nil {
