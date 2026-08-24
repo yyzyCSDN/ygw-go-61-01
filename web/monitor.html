@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>SessionStore 监控台</title>
+<style>
+  body { font-family: "Microsoft YaHei", sans-serif; margin: 2rem; background: #f5f7fa; color: #22303f; }
+  h1 { font-size: 1.4rem; }
+  .cards { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
+  .card { background: #fff; border-radius: 8px; padding: 1rem 1.4rem; box-shadow: 0 1px 3px rgba(0,0,0,.12); min-width: 120px; }
+  .card .value { font-size: 2rem; font-weight: 700; }
+  .card .label { color: #64748b; font-size: .85rem; }
+  table { border-collapse: collapse; width: 100%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  th, td { border: 1px solid #e2e8f0; padding: .5rem .8rem; text-align: left; font-size: .9rem; }
+  th { background: #eef2f7; }
+  .ok { color: #15803d; }
+  .warn { color: #b45309; }
+  .err { color: #b91c1c; }
+</style>
+</head>
+<body>
+<h1>SessionStore 会话状态监控</h1>
+<div class="cards">
+  <div class="card"><div class="value" id="total">-</div><div class="label">会话总数</div></div>
+  <div class="card"><div class="value" id="active">-</div><div class="label">活跃</div></div>
+  <div class="card"><div class="value" id="stale">-</div><div class="label">接近过期</div></div>
+  <div class="card"><div class="value" id="expired">-</div><div class="label">已过期</div></div>
+</div>
+<h2>节点分布</h2>
+<table id="nodes"><thead><tr><th>节点</th><th>地址</th><th>状态</th><th>会话数</th></tr></thead><tbody></tbody></table>
+<h2>同步状态</h2>
+<table id="syncs"><thead><tr><th>会话</th><th>状态</th></tr></thead><tbody></tbody></table>
+<p class="warn" id="status">加载中…</p>
+<script>
+async function refresh() {
+  try {
+    const resp = await fetch("/api/monitor");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    document.getElementById("total").textContent = data.TotalSessions;
+    document.getElementById("active").textContent = data.Active;
+    document.getElementById("stale").textContent = data.Stale;
+    document.getElementById("expired").textContent = data.Expired;
+    const rows = document.getElementById("nodes").querySelector("tbody");
+    rows.innerHTML = "";
+    for (const node of data.Nodes || []) {
+      const tr = document.createElement("tr");
+      const stateClass = node.State === "up" ? "ok" : (node.State === "migrating" ? "warn" : "err");
+      tr.innerHTML = "<td>" + node.ID + "</td><td>" + node.Addr + "</td><td class=\"" + stateClass + "\">" + node.State + "</td><td>" + node.Sessions + "</td>";
+      rows.appendChild(tr);
+    }
+    const syncRows = document.getElementById("syncs").querySelector("tbody");
+    syncRows.innerHTML = "";
+    for (const [id, state] of Object.entries(data.SyncStates || {})) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + id + "</td><td>" + state + "</td>";
+      syncRows.appendChild(tr);
+    }
+    document.getElementById("status").textContent = "更新于 " + new Date().toLocaleTimeString();
+    document.getElementById("status").className = "ok";
+  } catch (err) {
+    document.getElementById("status").textContent = "刷新失败: " + err.message;
+    document.getElementById("status").className = "err";
+  }
+}
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>
