@@ -10,6 +10,6 @@ func (a *Allocator) AllocBatch(n int) []uint64 {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	start := a.next
-	a.next += uint64(n - 1)
+	a.next += uint64(n)
 	return Range(start, a.next)
 }

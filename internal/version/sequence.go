@@ -3,11 +3,11 @@ package version
 // Range builds the half-open sequence [start, end).  Every call returns a
 // fresh slice so callers can stamp sessions without aliasing.
 func Range(start, end uint64) []uint64 {
-	if end < start {
+	if end <= start {
 		return nil
 	}
 	values := make([]uint64, 0, int(end-start))
-	for value := start; value <= end; value++ {
+	for value := start; value < end; value++ {
 		values = append(values, value)
 	}
 	return values
