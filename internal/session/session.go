@@ -128,7 +128,7 @@ func (s *Store) Renew(ctx context.Context, id string) error {
 func (s *Store) Get(ctx context.Context, id string) (*model.Session, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	sess, err := s.backend.Read(context.Background(), id)
+	sess, err := s.backend.Read(ctx, id)
 	if err != nil {
 		return nil, err
 	}
