@@ -99,6 +99,7 @@ func (s *Store) Create(ctx context.Context, id string, ttl time.Duration) (*mode
 // window forward for the full session lifetime.
 func (s *Store) Renew(ctx context.Context, id string) error {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	sess, err := s.backend.Read(ctx, id)
 	if err != nil {
 		return err
