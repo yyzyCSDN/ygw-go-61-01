@@ -57,7 +57,12 @@ func (s *Store) Evict(ctx context.Context, id string) error {
 	if sess == nil {
 		return model.ErrNotFound
 	}
-	_ = s.saver.SaveBeforeEvict(ctx, sess)
+	if err := s.saver.SaveBeforeEvict(ctx, sess); err != nil {
+		// Abort before any mutation: the session stays in the backend, the
+		// shard table and the TTL clock so the next eviction sweep can retry
+		// the save instead of discarding state that was never persisted.
+		return fmt.Errorf("save before evict %s: %w", id, err)
+	}
 	if err := sess.Advance(model.StateExpired); err != nil {
 		return err
 	}

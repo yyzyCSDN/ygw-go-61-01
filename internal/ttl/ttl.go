@@ -2,6 +2,7 @@ package ttl
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -116,7 +117,12 @@ func (c *Clock) EvictExpired(ctx context.Context, evictor Evictor) error {
 	}
 	c.mu.Unlock()
 	for _, id := range expired {
-		_ = evictor.Evict(ctx, id)
+		if err := evictor.Evict(ctx, id); err != nil {
+			// Abort the sweep so the caller can retry the next tick while the
+			// session is still in the backend: a save-before-evict failure
+			// must surface, not be swallowed, or the session state is lost.
+			return fmt.Errorf("evict %s: %w", id, err)
+		}
 	}
 	return nil
 }
